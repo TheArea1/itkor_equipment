@@ -1,0 +1,25 @@
+{
+  "info": { "name": "ITKOR 2 Maintenance API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:3000/api" }, { "key": "equipmentId", "value": "" }, { "key": "requestId", "value": "" }],
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().data.status).to.eql('ok');"] } }] },
+    { "name": "Equipment", "item": [
+      { "name": "Create", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Turbine A-01\",\n  \"type\": \"turbine\",\n  \"serialNumber\": \"WT-001\",\n  \"location\": {\"lat\": 56.84, \"lon\": 60.61},\n  \"status\": \"operational\",\n  \"installedAt\": \"2025-01-01\"\n}" }, "url": "{{baseUrl}}/equipment" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('201', () => pm.response.to.have.status(201));", "pm.environment.set('equipmentId', pm.response.json().data.id);"] } }] },
+      { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/equipment?page=1&limit=20" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json()).to.have.property('meta');"] } }] },
+      { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/equipment/{{equipmentId}}" } },
+      { "name": "Update", "request": { "method": "PATCH", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"status\":\"maintenance\"}" }, "url": "{{baseUrl}}/equipment/{{equipmentId}}" } },
+      { "name": "Weather", "request": { "method": "GET", "url": "{{baseUrl}}/equipment/{{equipmentId}}/weather" } },
+      { "name": "Duplicate serial (409)", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"name\":\"Other turbine\",\"type\":\"turbine\",\"serialNumber\":\"WT-001\",\"location\":{\"lat\":1,\"lon\":1},\"installedAt\":\"2025-01-01\"}" }, "url": "{{baseUrl}}/equipment" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] } }] }
+    ] },
+    { "name": "Requests", "item": [
+      { "name": "Create", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"equipmentId\":\"{{equipmentId}}\",\"title\":\"Inspect blade surface\",\"description\":\"Visual inspection\",\"priority\":\"high\"}" }, "url": "{{baseUrl}}/requests" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('201', () => pm.response.to.have.status(201));", "pm.environment.set('requestId', pm.response.json().data.id);"] } }] },
+      { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/requests?priority=high" } },
+      { "name": "By equipment", "request": { "method": "GET", "url": "{{baseUrl}}/equipment/{{equipmentId}}/requests" } },
+      { "name": "Update", "request": { "method": "PATCH", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"priority\":\"critical\"}" }, "url": "{{baseUrl}}/requests/{{requestId}}" } },
+      { "name": "Start", "request": { "method": "PATCH", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"status\":\"in_progress\"}" }, "url": "{{baseUrl}}/requests/{{requestId}}/status" } },
+      { "name": "Invalid transition (409)", "request": { "method": "PATCH", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"status\":\"new\"}" }, "url": "{{baseUrl}}/requests/{{requestId}}/status" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] } }] },
+      { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/requests/{{requestId}}" } }
+    ] },
+    { "name": "Validation error (422)", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"name\":\"x\"}" }, "url": "{{baseUrl}}/equipment" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('422', () => pm.response.to.have.status(422));", "pm.expect(pm.response.json().error.details).to.be.an('array');"] } }] }
+  ]
+}
